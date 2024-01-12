@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Custom Calendar with Notes</title>
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: center;
+        }
+
+        button {
+            width: 100%;
+            padding: 5px;
+            cursor: pointer;
+        }
+
+        #uploadButton {
+            margin-top: 10px;
+        }
+
+        #adminControls {
+            display: none; /* Hidden by default, only visible to the admin */
+        }
+    </style>
+</head>
+<body>
+    <!-- Calendar Header -->
+    <h1>My Calendar</h1>
+
+    <!-- Login Form -->
+    <div>
+        <label for="isAdmin">Login as Admin:</label>
+        <input type="checkbox" id="isAdmin" onchange="toggleAdminControls()">
+    </div>
+    
+    <!-- Navigation Buttons (Previous Month, Current Month, Next Month) -->
+    <div>
+        <button onclick="previousMonth()">Previous Month</button>
+        <span id="currentMonthYear"></span>
+        <button onclick="nextMonth()">Next Month</button>
+    </div>
+    
+    <!-- Calendar Container -->
+    <div id="calendar-container"></div>
+
+    <!-- File Upload Form -->
+    <div>
+        <h2>Upload Notes</h2>
+        <!-- Form for uploading files -->
+        <form id="uploadForm" enctype="multipart/form-data">
+            <input type="file" id="fileInput" multiple required>
+            <input type="date" id="dateInput" required>
+            <button type="button" onclick="uploadFiles()">Upload</button>
+        </form>
+    </div>
+
+    <!-- Admin Controls (Visible only to the admin) -->
+    <div id="adminControls">
+        <!-- Upload button at the bottom of the calendar (for admin) -->
+        <div id="uploadButton">
+            <button onclick="uploadAllFiles()">Upload All Files for Selected Date</button>
+        </div>
+    </div>
+
+    <!-- JavaScript code -->
+    <script>
+        // Variables for tracking the current month and year
+        let currentMonth = 0;
+        let currentYear = 2024;
+        
+        // Variable to determine if the user is an admin
+        let isAdmin = false;
+
+        // Function to generate the calendar for a given month and year
+        function generateCalendar(month, year) {
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const firstDayOfMonth = new Date(year, month, 1).getDay();
+
+            const calendarContainer = document.getElementById('calendar-container');
+            const table = document.createElement('table');
+
+            // Create table header with weekdays
+            const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            const headerRow = document.createElement('tr');
+            weekdays.forEach(weekday => {
+                const th = document.createElement('th');
+                th.textContent = weekday;
+                headerRow.appendChild(th);
+            });
+            table.appendChild(headerRow);
+
+            // Create table rows with days of the month
+            let dayCount = 1;
+            for (let i = 0; i < 5; i++) { // Reduced to 5 rows
+                const row = document.createElement('tr');
+                for (let j = 0; j < 7; j++) {
+                    const cell = document.createElement('td');
+                    if ((i === 0 && j < firstDayOfMonth) || dayCount > daysInMonth) {
+                        // Empty cells before the first day and after the last day of the month
+                        cell.textContent = '';
+                    } else {
+                        const dateButton = document.createElement('button');
+                        dateButton.textContent = dayCount;
+                        dateButton.addEventListener('click', () => {
+                            // Trigger function to download the zip file for the selected date
+                            downloadZip(`${year}-${month + 1}-${dayCount}`);
+                        });
+                        cell.appendChild(dateButton);
+                        dayCount++;
+                    }
+                    row.appendChild(cell);
+                }
+                table.appendChild(row);
+            }
+
+            calendarContainer.innerHTML = '';
+            calendarContainer.appendChild(table);
+
+            // Update the current month and year display
+            document.getElementById('currentMonthYear').textContent = `${getMonthName(month)} ${year}`;
+        }
+
+        // Function to toggle admin controls visibility
+        function toggleAdminControls() {
+            isAdmin = document.getElementById('isAdmin').checked;
+            document.getElementById('adminControls').style.display = isAdmin ? 'block' : 'none';
+        }
+
+        // Function to download the zip file for the selected date
+        function downloadZip(selectedDate) {
+            // Simulate file download using GitHub repository structure
+            const zipFileName = `public/notes_${selectedDate}.zip`;
+            window.location.href = zipFileName;
+        }
+
+        // Function to handle file upload
+        function uploadFiles() {
+            const fileInput = document.getElementById('fileInput');
+            const dateInput = document.getElementById('dateInput');
+            
+            if (!fileInput.files.length || !dateInput.value) {
+                alert('Please select files and choose a date.');
+                return;
+            }
+
+            // Simulate file upload using GitHub repository structure
+            const files = Array.from(fileInput.files);
+            const date = dateInput.value;
+            const zipFileName = `public/notes_${date}.zip`;
+
+            const zip = new JSZip();
+            files.forEach(file => {
+                zip.file(file.name, file);
+            });
+
+            zip.generateAsync({ type: 'blob' })
+                .then(blob => {
+                    const link = document.createElement('a');
+                    link.href = URL.createObjectURL(blob);
+                    link.download = `notes_${date}.zip`;
+                    link.click();
+                })
+                .catch(error => {
+                    console.error('Error generating zip file:', error);
+                });
+        }
+
+        // Function to handle uploading all files for a selected date (for admin)
+        function uploadAllFiles() {
+            if (!isAdmin) {
+                alert('You do not have permission to perform this action.');
+                return;
+            }
+            // You can implement the logic for uploading all files for a selected date here
+            // For the example, let's just display an alert
+            alert('Uploading all files for the selected date. Implement the logic here.');
+        }
+
+        // Function to get the month name based on its index
+        function getMonthName(month) {
+            const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+            return months[month];
+        }
+
+        // Function to navigate to the previous month
+        function previousMonth() {
+            currentMonth--;
+            if (currentMonth < 0) {
+                currentMonth = 11;
+                currentYear--;
+            }
+            generateCalendar(currentMonth, currentYear);
+        }
+
+        // Function to navigate to the next month
+        function nextMonth() {
+            currentMonth++;
+            if (currentMonth > 11) {
+                currentMonth = 0;
+                currentYear++;
+            }
+            generateCalendar(currentMonth, currentYear);
+        }
+
+        // Initial calendar generation
+        generateCalendar(currentMonth, currentYear);
+    </script>
+</body>
+</html>
